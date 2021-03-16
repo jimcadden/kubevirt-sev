@@ -768,6 +768,15 @@ func Convert_v1_VirtualMachine_To_api_Domain(vmi *v1.VirtualMachineInstance, dom
 			domain.Spec.SysInfo.System = append(domain.Spec.SysInfo.System, Entry{Name: "serial", Value: string(vmi.Spec.Domain.Firmware.Serial)})
 		}
 	}
+	// Set SEV launch security parameters: https://libvirt.org/kbase/launch_security_sev.html
+	if vmi.Spec.Domain.LaunchSecurity != nil && vmi.Spec.Domain.LaunchSecurity.SEV != nil {
+		domain.Spec.LaunchSecurity = &LaunchSecurity{
+			Type: "sev",
+			Cbitpos: vmi.Spec.Domain.LaunchSecurity.SEV.Cbitpos,
+			ReducedPhysBits: vmi.Spec.Domain.LaunchSecurity.SEV.ReducedPhysBits,
+			Policy: vmi.Spec.Domain.LaunchSecurity.SEV.Policy,
+		}
+	}
 	if c.SMBios != nil {
 		domain.Spec.SysInfo.System = append(domain.Spec.SysInfo.System,
 			Entry{
@@ -866,6 +875,14 @@ func Convert_v1_VirtualMachine_To_api_Domain(vmi *v1.VirtualMachineInstance, dom
 				},
 			},
 		}
+	}
+
+	// Lock encrypted pages	in host memory: https://libvirt.org/kbase/launch_security_sev.html#memory 
+	if vmi.Spec.Domain.LaunchSecurity != nil && vmi.Spec.Domain.LaunchSecurity.SEV != nil {
+		if domain.Spec.MemoryBacking == nil {
+			domain.Spec.MemoryBacking = &MemoryBacking{}
+		}
+		domain.Spec.MemoryBacking.Locked = &MemoryBackingLocked{} 
 	}
 
 	volumeIndices := map[string]int{}
@@ -1172,12 +1189,33 @@ func Convert_v1_VirtualMachine_To_api_Domain(vmi *v1.VirtualMachineInstance, dom
 		domain.Spec.CPU.Mode = v1.CPUModeHostModel
 	}
 
+	if vmi.Spec.Domain.LaunchSecurity != nil && vmi.Spec.Domain.LaunchSecurity.SEV != nil {
+		domain.Spec.Devices.Controllers = append(domain.Spec.Devices.Controllers, Controller{
+			Type:  "scsi",
+			Model:  "virtio-scsi",
+			Index: "0",
+			Driver: &ControllerDriver{
+				IOMMU: "on",
+			},
+		}) 
+	}
+
 	if vmi.Spec.Domain.Devices.AutoattachSerialConsole == nil || *vmi.Spec.Domain.Devices.AutoattachSerialConsole == true {
 		// Add mandatory console device
-		domain.Spec.Devices.Controllers = append(domain.Spec.Devices.Controllers, Controller{
-			Type:  "virtio-serial",
-			Index: "0",
-		})
+		if vmi.Spec.Domain.LaunchSecurity != nil && vmi.Spec.Domain.LaunchSecurity.SEV != nil {
+			domain.Spec.Devices.Controllers = append(domain.Spec.Devices.Controllers, Controller{
+				Type:  "virtio-serial",
+				Index: "0",
+				Driver: &ControllerDriver{
+					IOMMU: "on",
+				},
+			}) 
+		}else{
+			domain.Spec.Devices.Controllers = append(domain.Spec.Devices.Controllers, Controller{
+				Type:  "virtio-serial",
+				Index: "0",
+			}) 
+		}
 
 		var serialPort uint = 0
 		var serialType string = "serial"

@@ -8622,6 +8622,10 @@
       "description": "Controls whether or not disks will share IOThreads. Omitting IOThreadsPolicy disables use of IOThreads. One of: shared, auto",
       "type": "string"
      },
+     "launchSecurity": {
+      "description": "Launch Security.",
+      "$ref": "#/definitions/v1.LaunchSecurity"
+     },
      "machine": {
       "description": "Machine type.",
       "$ref": "#/definitions/v1.Machine"
@@ -9303,6 +9307,15 @@
      }
     }
    },
+   "v1.LaunchSecurity": {
+    "type": "object",
+    "properties": {
+     "sev": {
+      "description": "Settings to control AMD Secure Encrypted Virtualization (SEV).",
+      "$ref": "#/definitions/v1.SEV"
+     }
+    }
+   },
    "v1.LunTarget": {
     "type": "object",
     "properties": {
@@ -9642,6 +9655,24 @@
     "properties": {
      "serviceAccountName": {
       "description": "Name of the service account in the pod's namespace to use. More info: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/",
+      "type": "string"
+     }
+    }
+   },
+   "v1.SEV": {
+    "description": "Settings to control AMD Secure Encrypted Virtualization (SEV).",
+    "type": "object",
+    "properties": {
+     "cbitpos": {
+      "description": "C-bit location used to mark if a page is protected (hypervisor-dependent).",
+      "type": "string"
+     },
+     "reducedPhysBits": {
+      "description": "Number of reduced bits in the physical address space (processor-family-dependent).",
+      "type": "string"
+     },
+     "policy": {
+      "description": "Guest policy which is maintained by the SEV firmware.",
       "type": "string"
      }
     }

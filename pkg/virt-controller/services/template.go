@@ -314,7 +314,7 @@ func (t *templateService) RenderLaunchManifest(vmi *v1.VirtualMachineInstance) (
 	var volumes []k8sv1.Volume
 	var volumeDevices []k8sv1.VolumeDevice
 	var userId int64 = 0
-	var privileged bool = false
+	var privileged bool = true
 	var volumeMounts []k8sv1.VolumeMount
 	var imagePullSecrets []k8sv1.LocalObjectReference
 
@@ -840,6 +840,7 @@ func (t *templateService) RenderLaunchManifest(vmi *v1.VirtualMachineInstance) (
 		Resources:     resources,
 		Ports:         ports,
 	}
+
 
 	if vmi.Spec.ReadinessProbe != nil {
 		compute.ReadinessProbe = copyProbe(vmi.Spec.ReadinessProbe)
